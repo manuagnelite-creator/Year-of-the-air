@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A scrolling particle story of India's 2021 air quality across 171 cities, overlaid with a 2024 study on indoor smoke and cognition.">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>A Year of Air</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+/* Layout: a sticky full-bleed canvas of 62,415 day-particles; story cards scroll over its left edge (bottom on phones). */
+:root{
+  --bg:#e4e9ec; --surface:rgba(242,245,247,.88); --ink:#16202b; --muted:#56636f; --line:rgba(22,32,43,.16);
+  --clear:#2a74ad; --smog:#b44d1c; --gap:#a3aeb8; --neutral:#6a7682;
+  --indoor:#7d3f99; --sleep:#18867a; --cog:#a47c06;
+  --f-display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --f-body:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b0f13; --surface:rgba(13,18,23,.84); --ink:#e3e8ed; --muted:#8c98a4; --line:rgba(227,232,237,.14);
+  --clear:#8ecbea; --smog:#f2843d; --gap:#3a4551; --neutral:#8c98a4; --indoor:#c58ee6; --sleep:#5fd1c1; --cog:#e8c65a; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0b0f13; --surface:rgba(13,18,23,.84); --ink:#e3e8ed; --muted:#8c98a4; --line:rgba(227,232,237,.14);
+  --clear:#8ecbea; --smog:#f2843d; --gap:#3a4551; --neutral:#8c98a4; --indoor:#c58ee6; --sleep:#5fd1c1; --cog:#e8c65a; color-scheme:dark }
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55}
+.stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
+#cv{display:block;width:100%;height:100%;touch-action:pan-y;cursor:grab}
+#cv.flat{cursor:crosshair}
+.legend{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:max(20px,env(safe-area-inset-right,0px));display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-end;
+  font-family:var(--f-mono);font-size:11.5px;letter-spacing:.02em;color:var(--muted);transition:opacity .6s;pointer-events:none}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:8px;height:8px;display:inline-block;border-radius:50%}
+.legend.off{opacity:0}
+.olegend{position:absolute;top:calc(40px + env(safe-area-inset-top,0px));right:max(20px,env(safe-area-inset-right,0px));font-family:var(--f-mono);font-size:11.5px;color:var(--muted);
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;pointer-events:none;transition:opacity .5s}
+.olegend .sw{display:inline-flex;gap:3px}
+.olegend .sw i{width:14px;height:8px;border-radius:1px;display:block;background:var(--oc)}
+.olegend .bl{color:var(--ink)}
+.c-indoor{color:var(--indoor)} .c-sleep{color:var(--sleep)} .c-cog{color:var(--cog)}
+.chain{width:100%;height:auto;margin:6px 0 10px;overflow:visible}
+.chain text{font-family:var(--f-mono);font-size:11px;fill:var(--ink)}
+.chain .v{fill:var(--muted);font-size:10.5px}
+.chain rect{fill:none;stroke:var(--line);stroke-width:1}
+.chain path{fill:none;stroke:var(--muted);stroke-width:1}
+.chain .neg{stroke:var(--smog)}
+.cite{font-family:var(--f-mono);font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+.cite a{color:inherit}
+.paper{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);margin-top:8px;display:grid;grid-template-columns:auto 1fr;gap:2px 10px}
+.paper b{font-weight:500;color:var(--ink)}
+.steps{position:relative;margin-top:-100vh;margin-top:-100svh;pointer-events:none;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.step{min-height:100vh;min-height:100svh;display:flex;align-items:center}
+.card{pointer-events:auto;width:min(370px,100%);background:var(--surface);border:1px solid var(--line);border-radius:3px;
+  padding:22px 24px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);margin-left:24px}
+.card p{margin:0 0 .7em;max-width:62ch}
+.card p:last-child{margin-bottom:0}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+h1,h2{font-family:var(--f-display);text-wrap:balance;margin:0 0 12px;line-height:1.02}
+h1{font-size:clamp(46px,7vw,76px);font-weight:800;letter-spacing:-.03em}
+h2{font-size:26px;font-weight:600;letter-spacing:-.015em;line-height:1.12}
+.n{font-family:var(--f-mono);font-size:.9em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.c-clear{color:var(--clear)} .c-smog{color:var(--smog)} .c-gap{color:var(--muted)}
+.hint{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-top:16px;display:flex;align-items:center;gap:8px}
+.hint b{display:inline-block;width:1px;height:22px;background:var(--muted);animation:drip 1.8s ease-in-out infinite;transform-origin:top}
+@keyframes drip{0%{transform:scaleY(.2)}50%{transform:scaleY(1)}100%{transform:scaleY(.2)}}
+.bands{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.bands dt{font-variant-numeric:tabular-nums} .bands dd{margin:0}
+/* explore */
+.tools{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+.seg{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.seg button{flex:1 1 auto;font-family:var(--f-mono);font-size:12.5px;padding:8px 10px;background:transparent;color:var(--ink);border:0;border-right:1px solid var(--line);cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible,input:focus-visible,select:focus-visible,.clearbtn:focus-visible{outline:2px solid var(--clear);outline-offset:2px}
+input,select{width:100%;font-family:var(--f-mono);font-size:14px;padding:9px 10px;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:3px;box-sizing:border-box}
+select:disabled{opacity:.45}
+.info{border-top:1px solid var(--line);padding-top:12px;min-height:92px}
+.info h3{font-family:var(--f-display);font-size:22px;font-weight:600;margin:0;letter-spacing:-.01em}
+.info .st{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-bottom:10px}
+.bar{display:flex;height:10px;border-radius:1px;overflow:hidden;background:var(--line);margin:8px 0}
+.bar i{display:block;height:100%}
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.nums b{display:block;font-size:18px;font-weight:500;font-variant-numeric:tabular-nums}
+.clearbtn{font-family:var(--f-mono);font-size:12px;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;padding:0;margin-top:8px}
+.foot{font-family:var(--f-mono);font-size:11px;color:var(--muted);line-height:1.5}
+/* tooltip */
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:10px 12px;width:210px;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-size:14px;line-height:1.35;z-index:3}
+.tip h4{font-family:var(--f-display);font-size:17px;margin:0;font-weight:600}
+.tip .st{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.tip .nums b{font-size:15px}
+@media (max-width:899px){
+  body{font-size:16px}
+  .step{align-items:flex-end;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+  .card{margin-left:0;width:100%;box-sizing:border-box;padding:16px 18px}
+  h1{font-size:44px}
+  h2{font-size:22px}
+  .legend{left:max(16px,env(safe-area-inset-left,0px));right:auto;justify-content:flex-start}
+  .step.last .card{max-height:44svh;overflow:auto}
+  .olegend{left:max(16px,env(safe-area-inset-left,0px));right:auto;justify-content:flex-start;top:calc(36px + env(safe-area-inset-top,0px))}
+}
+@media (prefers-reduced-motion: reduce){.hint b{animation:none}html{scroll-behavior:auto}}
+</style>
+
+<div class="stage" id="stage">
+  <canvas id="cv" aria-label="Particle visualisation: each dot is one day of air quality in one Indian city in 2021"></canvas>
+  <div class="legend off" id="legend" aria-hidden="true">
+    <span><i style="background:var(--clear)"></i>AQI 0–200</span>
+    <span><i style="background:var(--smog)"></i>AQI above 200</span>
+    <span><i style="background:var(--gap)"></i>not recorded</span>
+  </div>
+  <div class="olegend" id="olegend" hidden></div>
+  <div class="tip" id="tip" hidden></div>
+</div>
+
+<div class="steps">
+  <section class="step" data-step="0"><div class="card">
+    <div class="eyebrow">India · 171 cities · 2021</div>
+    <h1>A Year of Air</h1>
+    <p>Every dot is one day, in one Indian city, in 2021. There are <span class="n">62,415</span> of them, one for each day each monitored city lived through.</p>
+    <p>Drag to turn the cloud. Scroll to sort it.</p>
+    <div class="hint"><b></b>Scroll</div>
+  </div></section>
+
+  <section class="step" data-step="1"><div class="card">
+    <h2>Most days were breathable</h2>
+    <p><span class="n c-clear">39,108</span> days stayed at an AQI of 200 or below. <span class="n c-smog">8,096</span> days went above it. <span class="n c-gap">15,211</span> days were never recorded at all.</p>
+    <dl class="bands">
+      <dt class="c-clear">0–200</dt><dd>Good, Satisfactory, Moderate</dd>
+      <dt class="c-smog">201–500</dt><dd>Poor, Very Poor, Severe</dd>
+    </dl>
+  </div></section>
+
+  <section class="step" data-step="2"><div class="card">
+    <h2>Pulled apart, the smog looks small</h2>
+    <p>Bad-air days are about <span class="n">13%</span> of all days. That share hides how unevenly they fall. They pile up in a handful of places.</p>
+  </div></section>
+
+  <section class="step" data-step="3"><div class="card">
+    <h2>171 cities, one disc each</h2>
+    <p>Each disc is a city's year. Bad days sit at the centre, clear days around them, and unrecorded days form a faint outer ring.</p>
+    <p>They are sorted from the most bad days to the fewest. Hover any disc to read it.</p>
+  </div></section>
+
+  <section class="step" data-step="4"><div class="card">
+    <h2>Nine of the ten worst ring Delhi</h2>
+    <p>Bhiwadi had <span class="n c-smog">213</span> bad days, more than half its year. Ghaziabad had <span class="n c-smog">202</span>. Greater Noida, Faridabad, Meerut, Baghpat, Bulandshahr, Delhi and Noida each had between 159 and 180.</p>
+    <p>The odd one out is Singrauli, a coal-power town in Madhya Pradesh, with <span class="n c-smog">153</span>.</p>
+  </div></section>
+
+  <section class="step" data-step="5"><div class="card">
+    <h2>Put them on a map</h2>
+    <p>Placed where they are, the cities crowd together across the north. Delhi, Haryana, Uttar Pradesh, Bihar, Punjab and Chandigarh hold <span class="n c-smog">5,766</span> of the <span class="n">8,096</span> bad days. That is <span class="n">71%</span>.</p>
+  </div></section>
+
+  <section class="step" data-step="6"><div class="card">
+    <h2>The south mostly breathed easy</h2>
+    <p>Bengaluru, Chennai and Hyderabad logged all <span class="n c-clear">365</span> days at AQI 200 or below. In total, 25 cities never recorded a day above 200 in 2021.</p>
+  </div></section>
+
+  <section class="step" data-step="7"><div class="card">
+    <h2>Bihar's year is mostly blank</h2>
+    <p>Seventeen Bihar cities were monitored for fewer than 60 days. Araria has <span class="n">14</span> recorded days out of 365.</p>
+    <p>In 16 of those 17 cities, bad days outnumber clear ones among the days that were measured. A blank day is an unknown day, not a clean one.</p>
+  </div></section>
+
+  <section class="step" data-step="8"><div class="card">
+    <h2>Stack the bad days</h2>
+    <p>Raise each city's bad days into a column over its spot on the map, and the north turns into a skyline. Each ring of beads is six days.</p>
+    <p>Drag to look around it.</p>
+  </div></section>
+
+  <section class="step" data-step="9"><div class="card">
+    <div class="eyebrow">Second dataset · indoors</div>
+    <h2>Now step inside</h2>
+    <p>A 2024 study in <em>BMC Geriatrics</em> used the Longitudinal Ageing Study in India: <span class="n">72,250</span> adults aged 45 and over, surveyed in 2017–18. It scored each household's indoor smoke from unclean cooking fuel and stoves without ventilation.</p>
+    <p>The <span class="c-indoor">violet haze</span> shows each state's band in that study, from 1 to 4. Uttar Pradesh, Bihar, Jharkhand and Odisha sit in the top band.</p>
+  </div></section>
+
+  <section class="step" data-step="10"><div class="card">
+    <h2>Where the two smokes meet</h2>
+    <p>Of the <span class="n">32</span> cities with 100 or more bad outdoor days, <span class="n">31</span> are in states the study puts in its top two bands for cooking smoke. The 32nd is Delhi, too small to read on its map.</p>
+    <p>Older adults across Haryana, Uttar Pradesh and Bihar breathe smoke on both sides of the front door.</p>
+  </div></section>
+
+  <section class="step" data-step="11"><div class="card">
+    <h2>They are not the same map</h2>
+    <p>Indoor smoke peaks further east. Odisha, Jharkhand and Mizoram are in the top cooking-smoke band, yet their few monitors logged under <span class="n">4%</span> bad outdoor days. Across 24 states, the two rankings barely agree (Spearman <span class="n">0.21</span>).</p>
+    <p>Bihar has both: the top indoor band, and an outdoor record that is mostly blank.</p>
+  </div></section>
+
+  <section class="step" data-step="12"><div class="card">
+    <h2>The north sleeps worst</h2>
+    <p>The study's <span class="c-sleep">sleep-problem</span> scores are highest in Punjab, Haryana, Uttar Pradesh, Madhya Pradesh and West Bengal, all in its top band (0.84+ on a 0–4 scale). Most of the outdoor smog sits there too.</p>
+    <p>Karnataka is the outlier. It is in the top sleep band, while its 22 cities logged under 1% bad days.</p>
+  </div></section>
+
+  <section class="step" data-step="13"><div class="card">
+    <h2>Clean air, sharper scores</h2>
+    <p>Kerala and Tamil Nadu are the only states in the study's top <span class="c-cog">cognition</span> band (28+ on a 3–43 scale). Their 12 monitored cities logged <span class="n c-smog">8</span> bad days between them in 2021.</p>
+    <p>Telangana breaks the pattern. Hyderabad had <span class="n c-clear">365</span> clear days, but the study places Telangana in its third cooking-smoke band and names it the one southern state with low cognition scores.</p>
+  </div></section>
+
+  <section class="step" data-step="14"><div class="card">
+    <h2>What the study measured</h2>
+    <p>Indoor smoke was linked to lower cognition, partly through depression and poor sleep. In its fullest model, <span class="n">12.8%</span> of the effect ran through those two.</p>
+    <svg class="chain" viewBox="0 0 320 132" role="img" aria-label="Path model: indoor smoke to depression 0.186, to sleep 0.038, depression to sleep 0.153, depression to cognition minus 0.243, sleep to cognition minus 0.157, direct effect minus 0.381">
+      <rect x="2" y="96" width="78" height="30" rx="2"/><text x="41" y="115" text-anchor="middle">Smoke</text>
+      <rect x="240" y="96" width="78" height="30" rx="2"/><text x="279" y="115" text-anchor="middle">Cognition</text>
+      <rect x="2" y="6" width="78" height="30" rx="2"/><text x="41" y="25" text-anchor="middle">Depression</text>
+      <rect x="240" y="6" width="78" height="30" rx="2"/><text x="279" y="25" text-anchor="middle">Sleep</text>
+      <path d="M41 96 V36"/><text class="v" x="46" y="70">0.186</text>
+      <path d="M80 21 H240"/><text class="v" x="160" y="16" text-anchor="middle">0.153</text>
+      <path d="M80 104 L240 30"/><text class="v" x="118" y="76">0.038</text>
+      <path class="neg" d="M80 30 L240 104"/><text class="v" x="200" y="66">−0.243</text>
+      <path class="neg" d="M279 36 V96"/><text class="v" x="284" y="70">−0.157</text>
+      <path class="neg" d="M80 111 H240"/><text class="v" x="160" y="106" text-anchor="middle">−0.381 direct</text>
+    </svg>
+    <p>Read the overlay as geography, not cause. The study is cross-sectional, its bands are 2017–18 state averages, and it did not measure outdoor air.</p>
+    <div class="cite">Shaw, Kundu, Chattopadhyay &amp; Rao (2024). Indoor air pollution and cognitive function among older adults in India. <em>BMC Geriatrics</em> 24:81. <a href="https://doi.org/10.1186/s12877-024-04662-6">doi.org/10.1186/s12877-024-04662-6</a></div>
+  </div></section>
+
+  <section class="step last" data-step="15"><div class="card">
+    <h2>Find your city</h2>
+    <div class="tools">
+      <div>
+        <label class="lbl" for="q">City</label>
+        <input id="q" list="cities" placeholder="Type a city name" autocomplete="off">
+        <datalist id="cities"></datalist>
+      </div>
+      <div>
+        <span class="lbl" id="vlbl">View</span>
+        <div class="seg" role="group" aria-labelledby="vlbl" id="views">
+          <button data-v="grid" aria-pressed="true">Grid</button>
+          <button data-v="map" aria-pressed="false">Map</button>
+          <button data-v="towers" aria-pressed="false">Towers</button>
+          <button data-v="cloud" aria-pressed="false">Cloud</button>
+        </div>
+      </div>
+      <div>
+        <span class="lbl" id="olbl">Indoor layer (2024 study)</span>
+        <div class="seg" role="group" aria-labelledby="olbl" id="overlays">
+          <button data-o="none" aria-pressed="true">Off</button>
+          <button data-o="ip" aria-pressed="false">Smoke</button>
+          <button data-o="sleep" aria-pressed="false">Sleep</button>
+          <button data-o="cog" aria-pressed="false">Cognition</button>
+        </div>
+      </div>
+      <div>
+        <label class="lbl" for="sort">Sort the grid by</label>
+        <select id="sort">
+          <option value="bad">Most bad days</option>
+          <option value="good">Most clear days</option>
+          <option value="measured">Fewest recorded days</option>
+          <option value="state">State</option>
+        </select>
+      </div>
+      <div class="info" id="info"><p class="foot">Click a disc or search a city to see its year.</p></div>
+      <p class="foot">Day counts for 2021 as supplied, split at AQI 200 using India's National AQI bands. Vijayawada and Loni Dehat have no data. City positions on the map are approximate. Indoor bands are read by eye from Fig. 2 of Shaw et al. (2024); Delhi, Chandigarh and Puducherry are too small to read, and the northeast is the least certain.</p>
+    </div>
+  </div></section>
+</div>
+
+<script>
+const RAW=[["Andhra Pradesh","Amaravati",350,8,16.51,80.52],["Andhra Pradesh","Rajamahendravaram",342,9,17.0,81.8],["Andhra Pradesh","Tirupati",337,2,13.63,79.42],["Andhra Pradesh","Vijayawada",null,null,16.51,80.65],["Andhra Pradesh","Visakhapatnam",321,21,17.69,83.22],["Arunachal Pradesh","Naharlagun",102,2,27.1,93.69],["Assam","Guwahati",273,91,26.14,91.74],["Bihar","Araria",3,11,26.15,87.47],["Bihar","Arrah",3,12,25.56,84.66],["Bihar","Bettiah",26,28,26.8,84.5],["Bihar","Bhagalpur",3,36,25.25,86.98],["Bihar","Bihar Sharif",13,28,25.2,85.52],["Bihar","Buxar",2,17,25.56,83.98],["Bihar","Chhapra",2,30,25.78,84.73],["Bihar","Darbhanga",22,44,26.15,85.9],["Bihar","Gaya",325,35,24.79,85.0],["Bihar","Hajipur",219,99,25.69,85.21],["Bihar","Katihar",3,33,25.54,87.57],["Bihar","Kishanganj",6,30,26.1,87.95],["Bihar","Manguraha",0,0,27.13,84.2],["Bihar","Motihari",22,37,26.65,84.92],["Bihar","Munger",5,31,25.37,86.47],["Bihar","Muzaffarpur",222,132,26.12,85.39],["Bihar","Patna",224,140,25.59,85.14],["Bihar","Purnia",2,31,25.78,87.47],["Bihar","Rajgir",5,16,25.03,85.42],["Bihar","Saharsa",2,27,25.88,86.6],["Bihar","Sasaram",10,35,24.95,84.03],["Bihar","Siwan",1,30,26.22,84.36],["Chandigarh","Chandigarh",348,13,30.73,76.78],["Chhattisgarh","Bhilai",28,0,21.21,81.38],["Chhattisgarh","Bilaspur",96,0,22.08,82.15],["Delhi","Delhi",197,168,28.61,77.21],["Gujarat","Ahmedabad",323,38,23.02,72.57],["Gujarat","Ankleshwar",189,102,21.63,73.0],["Gujarat","Gandhinagar",341,1,23.22,72.65],["Gujarat","Nandesari",201,17,22.41,73.1],["Gujarat","Vapi",282,44,20.37,72.9],["Gujarat","Vatva",263,86,22.96,72.63],["Haryana","Ambala",279,68,30.38,76.78],["Haryana","Bahadurgarh",198,146,28.69,76.93],["Haryana","Ballabgarh",214,124,28.34,77.32],["Haryana","Bhiwani",268,60,28.79,76.13],["Haryana","Charkhi Dadri",235,93,28.59,76.27],["Haryana","Dharuhera",180,126,28.21,76.8],["Haryana","Faridabad",186,177,28.41,77.32],["Haryana","Fatehabad",250,86,29.52,75.45],["Haryana","Gurugram",215,150,28.46,77.03],["Haryana","Hisar",195,146,29.15,75.72],["Haryana","Jind",207,130,29.32,76.31],["Haryana","Kaithal",269,69,29.8,76.4],["Haryana","Karnal",266,69,29.69,76.99],["Haryana","Kurukshetra",244,102,29.97,76.88],["Haryana","Mandikhera",288,34,27.91,77.03],["Haryana","Manesar",163,144,28.36,76.94],["Haryana","Narnaul",205,104,28.04,76.11],["Haryana","Palwal",289,27,28.14,77.33],["Haryana","Panchkula",312,23,30.69,76.86],["Haryana","Panipat",224,84,29.39,76.97],["Haryana","Rohtak",223,118,28.9,76.61],["Haryana","Sirsa",292,53,29.53,75.03],["Haryana","Sonipat",212,113,28.99,77.02],["Haryana","Yamunanagar",218,122,30.13,77.29],["Jammu and Kashmir","Srinagar",292,7,34.08,74.8],["Jharkhand","Jorapokhar",88,2,23.7,86.41],["Karnataka","Bagalkot",317,0,16.18,75.7],["Karnataka","Bengaluru",365,0,12.97,77.59],["Karnataka","Bidar",175,2,17.91,77.52],["Karnataka","Chamarajanagar",302,0,11.92,76.94],["Karnataka","Chikkaballapur",335,0,13.43,77.73],["Karnataka","Chikkamagaluru",316,0,13.32,75.77],["Karnataka","Davanagere",226,0,14.46,75.92],["Karnataka","Gadag",194,1,15.43,75.63],["Karnataka","Hassan",237,0,13.0,76.1],["Karnataka","Hubballi",329,6,15.36,75.12],["Karnataka","Kalaburagi",231,9,17.33,76.83],["Karnataka","Kolar",209,0,13.14,78.13],["Karnataka","Koppal",317,0,15.35,76.15],["Karnataka","Mangalore",238,0,12.91,74.86],["Karnataka","Madikeri",336,0,12.42,75.74],["Karnataka","Mysuru",305,0,12.3,76.64],["Karnataka","Raichur",285,3,16.21,77.36],["Karnataka","Ramanagara",277,2,12.72,77.28],["Karnataka","Shivamogga",305,1,13.93,75.57],["Karnataka","Udupi",131,24,13.34,74.75],["Karnataka","Vijayapura",275,0,16.83,75.71],["Karnataka","Yadgir",333,1,16.77,77.14],["Kerala","Eloor",294,0,10.07,76.3],["Kerala","Ernakulam",293,0,9.98,76.3],["Kerala","Kannur",326,1,11.87,75.37],["Kerala","Kochi",256,2,9.93,76.26],["Kerala","Kollam",333,2,8.89,76.61],["Kerala","Kozhikode",334,2,11.26,75.78],["Kerala","Thiruvananthapuram",361,1,8.52,76.94],["Kerala","Thrissur",264,0,10.53,76.21],["Madhya Pradesh","Bhopal",316,44,23.26,77.41],["Madhya Pradesh","Damoh",274,23,23.83,79.44],["Madhya Pradesh","Dewas",318,19,22.97,76.05],["Madhya Pradesh","Gwalior",289,71,26.22,78.18],["Madhya Pradesh","Indore",311,45,22.72,75.86],["Madhya Pradesh","Jabalpur",302,53,23.18,79.99],["Madhya Pradesh","Katni",251,109,23.83,80.39],["Madhya Pradesh","Maihar",153,4,24.27,80.76],["Madhya Pradesh","Mandideep",312,19,23.1,77.53],["Madhya Pradesh","Pithampur",340,23,22.61,75.68],["Madhya Pradesh","Ratlam",306,9,23.33,75.04],["Madhya Pradesh","Sagar",322,9,23.84,78.74],["Madhya Pradesh","Satna",336,0,24.6,80.83],["Madhya Pradesh","Singrauli",194,153,24.2,82.67],["Madhya Pradesh","Ujjain",316,41,23.18,75.78],["Maharashtra","Aurangabad",236,2,19.88,75.34],["Maharashtra","Chandrapur",347,16,19.96,79.3],["Maharashtra","Kalyan",204,79,19.24,73.13],["Maharashtra","Mumbai",326,39,19.08,72.88],["Maharashtra","Nagpur",183,1,21.15,79.09],["Maharashtra","Nashik",312,6,20.0,73.79],["Maharashtra","Navi Mumbai",286,71,19.03,73.03],["Maharashtra","Pune",359,6,18.52,73.86],["Maharashtra","Solapur",167,1,17.66,75.91],["Maharashtra","Thane",183,97,19.22,72.98],["Meghalaya","Shillong",172,0,25.58,91.89],["Mizoram","Aizawl",315,1,23.73,92.72],["Nagaland","Kohima",310,7,25.67,94.11],["Odisha","Brajrajnagar",228,10,21.82,83.92],["Odisha","Talcher",328,9,20.95,85.23],["Puducherry","Puducherry",335,0,11.94,79.81],["Punjab","Amritsar",311,32,31.63,74.87],["Punjab","Bathinda",254,24,30.21,74.95],["Punjab","Jalandhar",315,42,31.33,75.58],["Punjab","Khanna",332,25,30.7,76.22],["Punjab","Ludhiana",306,44,30.9,75.86],["Punjab","Mandi Gobindgarh",270,57,30.67,76.3],["Punjab","Patiala",317,39,30.34,76.39],["Punjab","Rupnagar",264,28,30.97,76.53],["Rajasthan","Ajmer",341,7,26.45,74.64],["Rajasthan","Alwar",357,5,27.55,76.63],["Rajasthan","Bhiwadi",142,213,28.21,76.86],["Rajasthan","Jaipur",330,34,26.91,75.79],["Rajasthan","Jodhpur",275,84,26.24,73.02],["Rajasthan","Kota",299,57,25.21,75.86],["Rajasthan","Pali",337,23,25.77,73.32],["Rajasthan","Udaipur",331,24,24.59,73.71],["Tamil Nadu","Chennai",365,0,13.08,80.27],["Tamil Nadu","Coimbatore",70,0,11.02,76.96],["Tamil Nadu","Gummidipoondi",193,5,13.41,80.11],["Tamil Nadu","Thoothukudi",324,0,8.76,78.13],["Telangana","Hyderabad",365,0,17.39,78.49],["Tripura","Agartala",284,44,23.83,91.29],["Uttar Pradesh","Agra",218,124,27.18,78.01],["Uttar Pradesh","Baghpat",169,170,28.94,77.22],["Uttar Pradesh","Bulandshahr",190,169,28.41,77.85],["Uttar Pradesh","Firozabad",102,57,27.15,78.4],["Uttar Pradesh","Ghaziabad",163,202,28.67,77.45],["Uttar Pradesh","Gorakhpur",145,28,26.76,83.37],["Uttar Pradesh","Greater Noida",184,180,28.47,77.5],["Uttar Pradesh","Hapur",243,84,28.73,77.78],["Uttar Pradesh","Kanpur",270,95,26.45,80.33],["Uttar Pradesh","Loni Dehat",null,null,28.75,77.29],["Uttar Pradesh","Lucknow",240,124,26.85,80.95],["Uttar Pradesh","Meerut",191,174,28.98,77.71],["Uttar Pradesh","Moradabad",160,141,28.84,78.77],["Uttar Pradesh","Muzaffarnagar",203,122,29.47,77.7],["Uttar Pradesh","Noida",204,159,28.54,77.39],["Uttar Pradesh","Prayagraj",160,49,25.44,81.85],["Uttar Pradesh","Varanasi",243,114,25.32,82.97],["Uttar Pradesh","Vrindavan",94,52,27.58,77.7],["West Bengal","Asansol",267,61,23.68,86.98],["West Bengal","Durgapur",177,116,23.52,87.31],["West Bengal","Haldia",300,22,22.06,88.07],["West Bengal","Howrah",266,98,22.59,88.26],["West Bengal","Kolkata",282,83,22.57,88.36]];
+
+(function(){
+const cities=RAW.map(([state,name,g,b,lat,lon],i)=>{g=g??0;b=b??0;return{i,state,name,g,b,u:365-g-b,lat,lon,nodata:RAW[i][2]==null}});
+// Shaw et al. 2024, BMC Geriatrics 24:81, Fig. 2 — state bands 1–4 read by eye (LASI 2017–18). [cooking smoke IP1, sleep problems, cognition]
+const PAPER={"Andhra Pradesh":[2,3,3],"Arunachal Pradesh":[3,2,2],"Assam":[2,3,3],"Bihar":[4,3,3],"Chhattisgarh":[3,3,2],"Gujarat":[3,3,3],"Haryana":[3,4,3],
+  "Jammu and Kashmir":[1,3,3],"Jharkhand":[4,3,2],"Karnataka":[2,4,3],"Kerala":[2,3,4],"Madhya Pradesh":[3,4,3],"Maharashtra":[2,3,2],"Meghalaya":[3,2,3],
+  "Mizoram":[4,3,3],"Nagaland":[2,3,3],"Odisha":[4,3,2],"Punjab":[3,4,3],"Rajasthan":[3,3,2],"Tamil Nadu":[2,3,4],"Telangana":[3,3,2],"Tripura":[3,3,2],
+  "Uttar Pradesh":[4,4,2],"West Bengal":[3,4,3]};
+const OV={ip:{i:0,name:'Cooking smoke',col:'indoor',bins:['<1.55','1.55–3.11','3.11–4.66','4.66+']},sleep:{i:1,name:'Sleep problems',col:'sleep',bins:['<0.28','0.28–0.56','0.56–0.84','0.84+']},
+  cog:{i:2,name:'Cognition',col:'cog',bins:['<23','23–25','25–28','28+']} };
+RAW.forEach(r=>{if(r[0]==='MadhyaPradesh')r[0]='Madhya Pradesh';});
+const NC=cities.length, D=365, N=NC*D, TAU=Math.PI*2, GA=Math.PI*(3-Math.sqrt(5));
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// seeded rng
+let seed=20211231; const rnd=()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;
+};
+
+// particles
+const city=new Uint16Array(N), kk=new Uint16Array(N), cat=new Uint8Array(N), rank=new Float32Array(N);
+const ux=new Float32Array(N), uy=new Float32Array(N), uz=new Float32Array(N);
+const X=new Float32Array(N),Y=new Float32Array(N),Z=new Float32Array(N),FX=new Float32Array(N),FY=new Float32Array(N),FZ=new Float32Array(N),TX=new Float32Array(N),TY=new Float32Array(N),TZ=new Float32Array(N);
+const SX=new Float32Array(N),SY=new Float32Array(N),SS=new Float32Array(N);
+const byCat=[[],[],[]];
+let p=0;
+for(const c of cities){for(let k=0;k<D;k++,p++){city[p]=c.i;kk[p]=k;const ct=k<c.b?1:(k<c.b+c.g?0:2);cat[p]=ct;byCat[ct].push(p);rank[p]=rnd();
+  let a=rnd()*2-1,b=rnd()*TAU,s=Math.sqrt(1-a*a),r=Math.cbrt(rnd());ux[p]=s*Math.cos(b)*r;uy[p]=a*r;uz[p]=s*Math.sin(b)*r;}}
+const CAT=byCat.map(a=>Uint32Array.from(a));
+const totals=[CAT[0].length,CAT[1].length,CAT[2].length];
+
+// city geometry (world coords)
+const cX=new Float32Array(NC),cY=new Float32Array(NC),cZ=new Float32Array(NC),cR=new Float32Array(NC),cTop=new Float32Array(NC);
+const mapX=new Float32Array(NC),mapY=new Float32Array(NC); let mapR=10;
+const sX=new Float32Array(NC),sY=new Float32Array(NC),sR=new Float32Array(NC);
+
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),stage=document.getElementById('stage'),tip=document.getElementById('tip'),legend=document.getElementById('legend');
+let W=0,H=0,DPR=1,A={};
+let view='cloud',sortKey='bad',dot=1.6,dotFrom=1.6,dotTo=1.6,tStart=0,DUR=reduce?0:1.4,SPREAD=reduce?0:.6;
+const cam={yaw:0,pitch:.25,ty:0,tp:.25,spin:true,F:1500};
+let reveal=0,revealTo=0,hl=new Uint8Array(NC),hlOn=false,dimF=1,labels=[],hover=-1,selected=-1,splitLabels=null,towerLabels=false;
+let COL={};
+
+let overlay='none',ovA=0,ovDraw='none';const SPR={};
+function sprite(col){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),gr=g.createRadialGradient(64,64,0,64,64,64);
+  gr.addColorStop(0,col);gr.addColorStop(.55,col);gr.addColorStop(1,'rgba(0,0,0,0)');g.globalAlpha=1;g.fillStyle=gr;g.fillRect(0,0,128,128);
+  // fade the outer half
+  const m=g.createRadialGradient(64,64,0,64,64,64);m.addColorStop(0,'rgba(0,0,0,1)');m.addColorStop(.45,'rgba(0,0,0,.9)');m.addColorStop(1,'rgba(0,0,0,0)');
+  g.globalCompositeOperation='destination-in';g.fillStyle=m;g.fillRect(0,0,128,128);return c;}
+function readColors(){const s=getComputedStyle(document.documentElement);for(const k of['clear','smog','gap','neutral','ink','muted','bg','indoor','sleep','cog'])COL[k]=s.getPropertyValue('--'+k).trim();
+  for(const k of['indoor','sleep','cog'])SPR[k]=sprite(COL[k]||'#888');}
+readColors();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>setTimeout(readColors,30));
+new MutationObserver(()=>setTimeout(readColors,30)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+function area(){const wide=W>=900;
+  if(wide)A={x0:W>1500?470:430,x1:W-36,y0:64,y1:H-28};else A={x0:6,x1:W-6,y0:64,y1:Math.round(H*.56)};
+  A.w=A.x1-A.x0;A.h=A.y1-A.y0;A.cx=A.x0+A.w/2;A.cy=A.y0+A.h/2;cam.F=Math.max(A.w,A.h)*1.9;}
+
+function order(key){const o=cities.map(c=>c.i);
+  const f={bad:(a,b)=>b.b-a.b||b.g-a.g,good:(a,b)=>b.g-a.g||a.b-b.b,measured:(a,b)=>(a.g+a.b)-(b.g+b.b)||b.b-a.b,state:(a,b)=>a.state.localeCompare(b.state)||b.b-a.b}[key];
+  return o.sort((i,j)=>f(cities[i],cities[j]));}
+
+function computeMap(){
+  const lat0=22,cl=Math.cos(lat0*Math.PI/180);let mnx=1e9,mxx=-1e9,mny=1e9,mxy=-1e9;
+  const px=cities.map(c=>(c.lon-82.5)*cl),py=cities.map(c=>-(c.lat-21.5));
+  px.forEach(v=>{mnx=Math.min(mnx,v);mxx=Math.max(mxx,v)});py.forEach(v=>{mny=Math.min(mny,v);mxy=Math.max(mxy,v)});
+  const s=Math.min(A.w*.84/(mxx-mnx),A.h*.86/(mxy-mny));mapR=Math.max(5,Math.min(17,s*.36));
+  const ox=(mnx+mxx)/2,oy=(mny+mxy)/2;
+  const x0=px.map(v=>(v-ox)*s),y0=py.map(v=>(v-oy)*s),x=x0.slice(),y=y0.slice(),min=mapR*2+1.2;
+  for(let it=0;it<260;it++){
+    for(let i=0;i<NC;i++)for(let j=i+1;j<NC;j++){let dx=x[j]-x[i],dy=y[j]-y[i],d=Math.hypot(dx,dy)||.01;if(d<min){const m=(min-d)/2/d;dx*=m;dy*=m;x[i]-=dx;y[i]-=dy;x[j]+=dx;y[j]+=dy;}}
+    for(let i=0;i<NC;i++){x[i]+=(x0[i]-x[i])*.012;y[i]+=(y0[i]-y[i])*.012;}
+  }
+  let bx=-1e9,by=-1e9,sx=1e9,sy=1e9;for(let i=0;i<NC;i++){bx=Math.max(bx,x[i]);sx=Math.min(sx,x[i]);by=Math.max(by,y[i]);sy=Math.min(sy,y[i]);}
+  const f=Math.min(1,(A.w/2-mapR-4)/Math.max(bx,-sx),(A.h/2-mapR-4)/Math.max(by,-sy));
+  for(let i=0;i<NC;i++){mapX[i]=x[i]*f;mapY[i]=y[i]*f;}
+}
+
+function layout(v){
+  const R=Math.min(A.w,A.h)*.42;
+  if(v==='cloud'){for(let i=0;i<N;i++){TX[i]=ux[i]*R*1.12;TY[i]=uy[i]*R*.86;TZ[i]=uz[i]*R;}return 1.5;}
+  if(v==='split'){const f=totals.map(t=>Math.cbrt(t/N)),gap=R*.18,sum=2*(f[0]+f[1]+f[2]);
+    const k=Math.min((A.w*.92-2*gap)/sum,A.h*.62/(2*f[0]));let x=-(sum*k+2*gap)/2;const cx=[],rr=[];
+    for(let c=0;c<3;c++){rr[c]=f[c]*k;cx[c]=x+rr[c];x+=2*rr[c]+gap;}
+    for(let i=0;i<N;i++){const c=cat[i];TX[i]=cx[c]+ux[i]*rr[c];TY[i]=uy[i]*rr[c]-A.h*.04;TZ[i]=uz[i]*rr[c];}
+    splitLabels=[0,1,2].map(c=>({x:cx[c],y:rr[0]-A.h*.04+26,c}));return 1.4;}
+  if(v==='grid'){const o=order(sortKey),cols=Math.max(4,Math.round(Math.sqrt(NC*A.w/A.h))),rows=Math.ceil(NC/cols),cell=Math.min(A.w/cols,A.h/rows),r=cell*.45,c=r/Math.sqrt(D);
+    o.forEach((ci,j)=>{cX[ci]=((j%cols)-(cols-1)/2)*cell;cY[ci]=(Math.floor(j/cols)-(rows-1)/2)*cell;cZ[ci]=0;cR[ci]=r;});
+    for(let i=0;i<N;i++){const ci=city[i],k=kk[i],a=k*GA,rr=c*Math.sqrt(k+.5);TX[i]=cX[ci]+Math.cos(a)*rr;TY[i]=cY[ci]+Math.sin(a)*rr;TZ[i]=0;}
+    return Math.max(1,Math.min(2.6,c*1.35));}
+  if(v==='map'){const c=mapR/Math.sqrt(D);for(let ci=0;ci<NC;ci++){cX[ci]=mapX[ci];cY[ci]=mapY[ci];cZ[ci]=0;cR[ci]=mapR;}
+    for(let i=0;i<N;i++){const ci=city[i],k=kk[i],a=k*GA,rr=c*Math.sqrt(k+.5);TX[i]=cX[ci]+Math.cos(a)*rr;TY[i]=cY[ci]+Math.sin(a)*rr;TZ[i]=0;}
+    return Math.max(1,c*1.5);}
+  if(v==='towers'){const sc=.92,per=6,maxL=Math.ceil(213/per),h=A.h*.5/maxL,g0=A.h*.2,tr=Math.max(1.4,mapR*.3),c=mapR*sc/Math.sqrt(D);
+    for(let ci=0;ci<NC;ci++){cX[ci]=mapX[ci]*sc;cZ[ci]=-mapY[ci]*sc;cY[ci]=g0;cR[ci]=mapR*sc;cTop[ci]=g0-Math.ceil(cities[ci].b/per)*h;}
+    for(let i=0;i<N;i++){const ci=city[i],k=kk[i],b=cities[ci].b;
+      if(k<b){const l=Math.floor(k/per),a=(k%per)/per*TAU+l*.52;TX[i]=cX[ci]+Math.cos(a)*tr;TZ[i]=cZ[ci]+Math.sin(a)*tr;TY[i]=g0-(l+1)*h;}
+      else{const j=k-b,a=j*GA,rr=c*Math.sqrt(j+.5);TX[i]=cX[ci]+Math.cos(a)*rr;TZ[i]=cZ[ci]+Math.sin(a)*rr;TY[i]=g0;}}
+    return 1.5;}
+}
+const CAM={cloud:[.28,true],split:[.18,true],grid:[0,false],map:[0,false],towers:[.95,true]};
+
+function setView(v,instant){
+  const changed=v!==view;view=v;
+  for(let i=0;i<N;i++){FX[i]=X[i];FY[i]=Y[i];FZ[i]=Z[i];}
+  dotFrom=dot;dotTo=layout(v);tStart=performance.now();
+  if(instant){X.set(TX);Y.set(TY);Z.set(TZ);dot=dotTo;tStart=-1e9;}
+  const [pt,spin]=CAM[v];cam.tp=pt;cam.spin=spin&&!reduce;
+  if(!spin){cam.yaw=((cam.yaw+Math.PI)%TAU+TAU)%TAU-Math.PI;cam.ty=0;}
+  if(v!=='split')splitLabels=null;
+  cv.classList.toggle('flat',v==='grid'||v==='map');
+  if(changed)hideTip();
+}
+
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=stage.clientWidth;H=stage.clientHeight;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);
+  area();computeMap();const keep=view;layout(keep);dotTo=dot=layout(keep);X.set(TX);Y.set(TY);Z.set(TZ);tStart=-1e9;}
+
+// projection
+function proj(x,y,z,o){const cy=Math.cos(cam.yaw),sy=Math.sin(cam.yaw),cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch);
+  const x1=x*cy+z*sy,z1=-x*sy+z*cy,y2=y*cp-z1*sp,z2=y*sp+z1*cp,s=cam.F/(cam.F+z2);o.x=A.cx+x1*s;o.y=A.cy+y2*s;o.s=s;return o;}
+
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+let last=performance.now(),dragging=false,spinPause=0;
+function frame(now){
+  const dt=Math.min(50,now-last);last=now;
+  // camera
+  if(cam.spin&&!dragging&&now>spinPause)cam.ty+=dt*.00012;
+  cam.yaw+=(cam.ty-cam.yaw)*(reduce?1:.08);cam.pitch+=(cam.tp-cam.pitch)*(reduce?1:.06);
+  reveal+=(revealTo-reveal)*(reduce?1:.045);
+  dimF+=((hlOn?.13:1)-dimF)*(reduce?1:.1);
+  // positions
+  const pt=(now-tStart)/1000,moving=pt<DUR+SPREAD+.05;
+  if(moving){const de=Math.min(1,pt/(DUR+SPREAD));dot=dotFrom+(dotTo-dotFrom)*ease(de);
+    for(let i=0;i<N;i++){let t=(pt-rank[i]*SPREAD)/DUR;if(t<=0){X[i]=FX[i];Y[i]=FY[i];Z[i]=FZ[i];}else if(t>=1){X[i]=TX[i];Y[i]=TY[i];Z[i]=TZ[i];}else{const e=ease(t);X[i]=FX[i]+(TX[i]-FX[i])*e;Y[i]=FY[i]+(TY[i]-FY[i])*e;Z[i]=FZ[i]+(TZ[i]-FZ[i])*e;}}}
+  else if(dot!==dotTo)dot=dotTo;
+  // project
+  const cy=Math.cos(cam.yaw),sy=Math.sin(cam.yaw),cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch),F=cam.F,flat=Math.abs(cam.yaw)<1e-4&&Math.abs(cam.pitch)<1e-4;
+  for(let i=0;i<N;i++){if(flat&&Z[i]===0){SX[i]=A.cx+X[i];SY[i]=A.cy+Y[i];SS[i]=1;continue;}
+    const x=X[i],y=Y[i],z=Z[i],x1=x*cy+z*sy,z1=-x*sy+z*cy,y2=y*cp-z1*sp,z2=y*sp+z1*cp,s=F/(F+z2);SX[i]=A.cx+x1*s;SY[i]=A.cy+y2*s;SS[i]=s;}
+  // draw
+  ctx.clearRect(0,0,W,H);
+  const o={},cityView=view==='grid'||view==='map'||view==='towers';
+  if(cityView){for(let ci=0;ci<NC;ci++){proj(cX[ci],cY[ci],cZ[ci],o);sX[ci]=o.x;sY[ci]=o.y;sR[ci]=cR[ci]*o.s;}}
+  // indoor-study haze
+  const ovT=overlay!=='none'&&cityView?1:0;if(overlay!=='none')ovDraw=overlay;ovA+=(ovT-ovA)*(reduce?1:.08);
+  if(ovA>.01&&cityView&&ovDraw!=='none'){const ov=OV[ovDraw],spr=SPR[ov.col],AL=[0,.16,.34,.56,.82],sq=view==='towers'?Math.max(.25,Math.cos(cam.pitch)):1,k=view==='grid'?1.32:2.4;
+    for(let ci=0;ci<NC;ci++){const st=PAPER[cities[ci].state];if(!st)continue;const b=st[ov.i];
+      ctx.globalAlpha=AL[b]*ovA*(hlOn&&!hl[ci]?.45:1);const r=sR[ci]*k;ctx.drawImage(spr,sX[ci]-r,sY[ci]-r*sq,2*r,2*r*sq);}
+    ctx.globalAlpha=1;}
+  const rv=reveal,hasN=rv<.999;
+  if(hasN){ctx.fillStyle=COL.neutral;ctx.globalAlpha=.75;for(let i=0;i<N;i++){if(rank[i]<rv)continue;const d=dot*SS[i];ctx.fillRect(SX[i]-d/2,SY[i]-d/2,d,d);}}
+  const base=[.88,.95,.55],cols=[COL.clear,COL.smog,COL.gap];
+  for(const c of[2,0,1]){const L=CAT[c];ctx.fillStyle=cols[c];
+    for(let pass=0;pass<2;pass++){if(pass===1&&dimF>.995)break;
+      ctx.globalAlpha=pass===0?base[c]*(dimF>.995?1:dimF):base[c];
+      for(let n=0;n<L.length;n++){const i=L[n];if(hasN&&rank[i]>=rv)continue;if(dimF<=.995&&(hl[city[i]]?0:1)!==(pass===0?1:0))continue;
+        const x=SX[i],y=SY[i];if(x<-4||y<-4||x>W+4||y>H+4)continue;const d=dot*SS[i];ctx.fillRect(x-d/2,y-d/2,d,d);}}}
+  ctx.globalAlpha=1;
+  // labels
+  const la=Math.max(0,Math.min(1,(pt-(DUR+SPREAD*.6))/.5));
+  if(la>0){ctx.globalAlpha=la;ctx.textAlign='center';
+    if(splitLabels){ctx.font='500 12px "IBM Plex Mono", monospace';const nm=['clear days','bad days','not recorded'];
+      for(const s of splitLabels){proj(s.x,s.y,0,o);ctx.fillStyle=cols[s.c]===COL.gap?COL.muted:cols[s.c];ctx.fillText(totals[s.c].toLocaleString('en-IN')+' '+nm[s.c],o.x,o.y);}}
+    if(labels.length&&(view==='grid'||view==='map')){ctx.font='500 11px "IBM Plex Mono", monospace';
+      for(const ci of labels){const tx=sX[ci],ty=sY[ci]+sR[ci]+13;ctx.fillStyle=COL.bg;ctx.globalAlpha=la*.8;const w=ctx.measureText(cities[ci].name).width;ctx.fillRect(tx-w/2-3,ty-10,w+6,14);ctx.globalAlpha=la;ctx.fillStyle=COL.ink;ctx.fillText(cities[ci].name,tx,ty);}}
+    if(view==='towers'){ctx.font='500 11px "IBM Plex Mono", monospace';ctx.fillStyle=COL.ink;
+      const used=[];for(const ci of TOPT){proj(cX[ci],cTop[ci]-8,cZ[ci],o);const t=cities[ci].name+' '+cities[ci].b,w=ctx.measureText(t).width+8,bx=o.x-w/2,by=o.y-12;if(used.some(u=>bx<u[0]+u[2]&&bx+w>u[0]&&by<u[1]+16&&by+16>u[1]))continue;used.push([bx,by,w]);ctx.fillText(t,o.x,o.y);}}
+    ctx.globalAlpha=1;}
+  // hover / selected ring
+  for(const ci of[hover,selected]){if(ci<0||!(view==='grid'||view==='map'||view==='towers'))continue;
+    ctx.strokeStyle=COL.ink;ctx.lineWidth=1.25;ctx.beginPath();
+    if(view==='towers'){ctx.ellipse(sX[ci],sY[ci],sR[ci]+3,(sR[ci]+3)*Math.cos(cam.pitch),0,0,TAU);}else ctx.arc(sX[ci],sY[ci],sR[ci]+3,0,TAU);ctx.stroke();}
+  requestAnimationFrame(frame);
+}
+const TOPT=order('bad').slice(0,14);
+
+// hover + drag
+function hit(mx,my){if(!(view==='grid'||view==='map'||view==='towers'))return -1;let best=-1,bd=1e9;
+  for(let ci=0;ci<NC;ci++){const dx=mx-sX[ci],dy=(my-sY[ci])/(view==='towers'?Math.max(.3,Math.cos(cam.pitch)):1),d=Math.hypot(dx,dy);if(d<Math.max(sR[ci]*1.15,8)&&d<bd){bd=d;best=ci;}}return best;}
+function cityHTML(c,tag){const m=c.g+c.b;const pb=m?Math.round(c.b/m*100):0;
+  return `<${tag}>${c.name}</${tag}><div class="st">${c.state}${c.nodata?' · no data':` · ${m} days recorded`}</div>
+  <div class="bar"><i style="width:${c.b/3.65}%;background:var(--smog)"></i><i style="width:${c.g/3.65}%;background:var(--clear)"></i><i style="width:${c.u/3.65}%;background:var(--gap)"></i></div>
+  <div class="nums"><span><b class="c-smog">${c.b}</b>bad</span><span><b class="c-clear">${c.g}</b>clear</span><span><b>${c.u}</b>blank</span></div>`+(tag==='h3'&&m?`<p class="foot" style="margin-top:8px">${pb}% of its recorded days were above AQI 200.</p>`:'')+paperHTML(c);}
+function paperHTML(c){const st=PAPER[c.state];if(!st)return `<div class="paper"><span>${c.state} is too small to read on the 2024 study's map.</span></div>`;
+  return `<div class="paper"><span class="c-indoor">Smoke</span><span><b>${st[0]}</b>/4 · ${OV.ip.bins[st[0]-1]}</span><span class="c-sleep">Sleep</span><span><b>${st[1]}</b>/4 · ${OV.sleep.bins[st[1]-1]}</span><span class="c-cog">Cognition</span><span><b>${st[2]}</b>/4 · ${OV.cog.bins[st[2]-1]}</span></div>`;}
+function showTip(ci,mx,my){const c=cities[ci];tip.innerHTML=cityHTML(c,'h4');tip.hidden=false;
+  let x=mx+16,y=my+16;if(x+220>W)x=mx-226;if(y+210>H)y=Math.max(8,my-216);tip.style.left=x+'px';tip.style.top=y+'px';}
+function hideTip(){tip.hidden=true;hover=-1;}
+let down=null;
+cv.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,yaw:cam.ty,p:cam.tp,moved:false};
+  if(view==='cloud'||view==='split'||view==='towers'){dragging=true;cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing';}});
+cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+  if(dragging&&down){const dx=e.clientX-down.x,dy=e.clientY-down.y;if(Math.abs(dx)+Math.abs(dy)>4)down.moved=true;cam.ty=down.yaw+dx*.006;cam.tp=Math.max(-.2,Math.min(1.35,down.p+dy*.004));spinPause=performance.now()+2500;hideTip();return;}
+  const h=hit(mx,my);hover=h;if(h>=0&&e.pointerType!=='touch')showTip(h,mx,my);else tip.hidden=true;});
+cv.addEventListener('pointerup',e=>{const r=cv.getBoundingClientRect();if(down&&!down.moved){const h=hit(e.clientX-r.left,e.clientY-r.top);
+    if(h>=0){if(current===EX)select(h);else showTip(h,e.clientX-r.left,e.clientY-r.top);}else if(e.pointerType==='touch')hideTip();}
+  dragging=false;down=null;cv.style.cursor='';});
+cv.addEventListener('pointerleave',()=>{if(!dragging)hideTip();});
+
+// steps
+const byName=n=>cities.findIndex(c=>c.name===n);
+const IGP=new Set(['Delhi','Haryana','Uttar Pradesh','Bihar','Punjab','Chandigarh']);
+const top10=order('bad').slice(0,10);
+const STEPS=[
+  {v:'cloud',reveal:0},
+  {v:'cloud',reveal:1},
+  {v:'split'},
+  {v:'grid',sort:'bad'},
+  {v:'grid',sort:'bad',hl:c=>top10.includes(c.i),labels:top10},
+  {v:'map',hl:c=>IGP.has(c.state),labels:['Delhi','Patna','Lucknow','Amritsar'].map(byName)},
+  {v:'map',hl:c=>c.b===0&&c.g>0,labels:['Bengaluru','Chennai','Hyderabad'].map(byName)},
+  {v:'grid',sort:'measured',hl:c=>c.state==='Bihar'&&c.g+c.b<60,labels:[byName('Araria')]},
+  {v:'towers'},
+  {v:'map',ov:'ip',labels:['Patna','Lucknow','Talcher'].map(byName)},
+  {v:'map',ov:'ip',hl:c=>c.b>=100,labels:['Bhiwadi','Ghaziabad','Patna','Durgapur','Singrauli'].map(byName)},
+  {v:'map',ov:'ip',hl:c=>['Odisha','Jharkhand','Mizoram'].includes(c.state)||(c.state==='Bihar'&&c.g+c.b<60),labels:['Talcher','Jorapokhar','Aizawl','Araria'].map(byName)},
+  {v:'map',ov:'sleep',hl:c=>PAPER[c.state]&&PAPER[c.state][1]===4,labels:['Bengaluru','Kolkata','Bhopal','Ludhiana'].map(byName)},
+  {v:'map',ov:'cog',hl:c=>['Kerala','Tamil Nadu','Telangana'].includes(c.state),labels:['Thiruvananthapuram','Chennai','Hyderabad'].map(byName)},
+  {v:'towers',ov:'ip'},
+  {explore:true}
+];
+const EX=STEPS.length-1,olegend=document.getElementById('olegend');
+function setOverlay(o){overlay=o;if(o==='none'){olegend.hidden=true;return;}const ov=OV[o];olegend.hidden=false;olegend.style.setProperty('--oc',`var(--${ov.col})`);
+  olegend.innerHTML=`<span class="bl">${ov.name}, 2017–18 study</span><span class="sw">${[.25,.45,.7,1].map(a=>`<i style="opacity:${a}"></i>`).join('')}</span><span>${ov.bins[0]} → ${ov.bins[3]}</span>`;}
+let current=-1,exView='grid',exOverlay='none';
+function setHL(fn){hl.fill(0);if(fn){cities.forEach(c=>{if(fn(c))hl[c.i]=1});hlOn=true}else hlOn=false;}
+function apply(i){if(i===current)return;current=i;const s=STEPS[i];
+  legend.classList.toggle('off',i===0);
+  if(s.explore){revealTo=1;labels=[];setOverlay(exOverlay);if(selected>=0){setHL(c=>c.i===selected);labels=[selected]}else setHL(null);
+    if(exView==='grid'&&sortKey!==sortSel.value){sortKey=sortSel.value;setView('grid');}else setView(exView);return;}
+  revealTo=s.reveal??1;setOverlay(s.ov||'none');
+  let needs=s.v!==view;if(s.sort&&s.sort!==sortKey){sortKey=s.sort;needs=true;}
+  if(needs)setView(s.v);
+  setHL(s.hl);labels=s.labels||[];towerLabels=s.v==='towers';
+}
+const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)apply(+e.target.dataset.step)})},{rootMargin:'-45% 0px -45% 0px'});
+document.querySelectorAll('.step').forEach(s=>io.observe(s));
+
+// explore controls
+const sortSel=document.getElementById('sort'),info=document.getElementById('info'),q=document.getElementById('q');
+document.getElementById('cities').innerHTML=cities.map(c=>`<option value="${c.name}">`).join('');
+document.querySelectorAll('#views button').forEach(b=>b.addEventListener('click',()=>{exView=b.dataset.v;
+  document.querySelectorAll('#views button').forEach(x=>x.setAttribute('aria-pressed',x===b));sortSel.disabled=exView!=='grid';
+  if(current===EX)setView(exView);}));
+document.querySelectorAll('#overlays button').forEach(b=>b.addEventListener('click',()=>{exOverlay=b.dataset.o;
+  document.querySelectorAll('#overlays button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  if(current===EX){setOverlay(exOverlay);if(exOverlay!=='none'&&view==='cloud'){exView='map';document.querySelectorAll('#views button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v==='map'));sortSel.disabled=true;setView('map');}}}));
+sortSel.addEventListener('change',()=>{sortKey=sortSel.value;if(exView!=='grid'){exView='grid';document.querySelectorAll('#views button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v==='grid'));sortSel.disabled=false;}
+  if(current===EX)setView('grid');});
+function select(ci){selected=ci;if(ci<0){info.innerHTML='<p class="foot">Click a disc or search a city to see its year.</p>';setHL(null);labels=[];return;}
+  info.innerHTML=cityHTML(cities[ci],'h3')+'<button class="clearbtn" id="clr">Clear selection</button>';
+  document.getElementById('clr').onclick=()=>{q.value='';select(-1);};
+  setHL(c=>c.i===ci);labels=[ci];if(view==='cloud'){exView='grid';document.querySelectorAll('#views button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v==='grid'));sortSel.disabled=false;setView('grid');}}
+q.addEventListener('input',()=>{const v=q.value.trim().toLowerCase();if(!v)return;const ci=cities.findIndex(c=>c.name.toLowerCase()===v);if(ci>=0)select(ci);});
+q.addEventListener('keydown',e=>{if(e.key==='Enter'){const v=q.value.trim().toLowerCase();const ci=cities.findIndex(c=>c.name.toLowerCase().startsWith(v));if(v&&ci>=0){q.value=cities[ci].name;select(ci);}}});
+
+// boot
+W=stage.clientWidth;H=stage.clientHeight;area();computeMap();
+layout('cloud');for(let i=0;i<N;i++){X[i]=TX[i]*1.6;Y[i]=TY[i]*1.6;Z[i]=TZ[i]*1.6;}
+resize();for(let i=0;i<N;i++){FX[i]=TX[i]*2.2;FY[i]=TY[i]*2.2;FZ[i]=TZ[i]*2.2;}tStart=performance.now();dotFrom=dot;
+apply(0);
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(resize,120)});
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
